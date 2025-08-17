@@ -126,6 +126,7 @@ def main(max_pages, stop_after, delay_min, delay_max, retries, checkpoint_every,
 
         if p % checkpoint_every == 0 and all_rows:
             df_ckpt = pd.DataFrame(all_rows).drop_duplicates()
+            df_ckpt = df_ckpt.dropna()   # remove rows with missing values
             write_checkpoint(df_ckpt, tag=p)
 
         if empty_streak >= stop_after:
@@ -134,10 +135,12 @@ def main(max_pages, stop_after, delay_min, delay_max, retries, checkpoint_every,
 
         time.sleep(random.uniform(delay_min, delay_max))
 
+    # Final save (cleaned)
     df = pd.DataFrame(all_rows).drop_duplicates()
+    df_clean = df.dropna()   # drop rows with any empty/missing values
     final_path = DATA_DIR / output_csv
-    df.to_csv(final_path, index=False, encoding="utf-8-sig")
-    print(f"✅ Done. Saved {len(df)} rows to {final_path}")
+    df_clean.to_csv(final_path, index=False, encoding="utf-8-sig")
+    print(f"✅ Done. Saved {len(df_clean)} cleaned rows to {final_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Scrape property listings from zameen.com")
@@ -147,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--delay-max", type=float, default=2.8, help="Maximum delay between requests")
     parser.add_argument("--retries", type=int, default=3, help="Retry attempts per request")
     parser.add_argument("--checkpoint-every", type=int, default=50, help="Write CSV checkpoint every N pages")
-    parser.add_argument("--output-csv", type=str, default="zameen_lahore_listings.csv", help="Final CSV filename")
+    parser.add_argument("--output-csv", type=str, default="zameen_lahore_listings_clean.csv", help="Final cleaned CSV filename")
 
     args = parser.parse_args()
 
